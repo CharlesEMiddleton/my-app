@@ -53,14 +53,18 @@ const useFormField = () => {
     throw new Error("useFormField should be used within <FormField>")
   }
 
-  const { id } = itemContext
+  // Use a deterministic base id derived from field name to avoid SSR/CSR mismatches
+  const baseId = React.useMemo(
+    () => String(fieldContext.name).replace(/\./g, "-"),
+    [fieldContext.name]
+  )
 
   return {
-    id,
+    id: itemContext?.id ?? baseId,
     name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
+    formItemId: `${baseId}-form-item`,
+    formDescriptionId: `${baseId}-form-item-description`,
+    formMessageId: `${baseId}-form-item-message`,
     ...fieldState,
   }
 }

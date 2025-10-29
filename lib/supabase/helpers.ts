@@ -12,14 +12,14 @@ export async function getFilteredEvents(input: z.infer<typeof EventFilterSchema>
   const { name, sport } = input;
 
   let query = supabase
-    .from("Events")
+    .from("events")
     .select(
       `
       id,
       name,
       sport_type,
       event_date,
-      Venues (
+      venues (
         name,
         city,
         state
@@ -29,7 +29,7 @@ export async function getFilteredEvents(input: z.infer<typeof EventFilterSchema>
     .order("event_date", { ascending: true });
 
   if (name) query = query.ilike("name", `%${name}%`);
-  if (sport) query = query.eq("sport_type", sport);
+  if (sport && sport !== "all") query = query.eq("sport_type", sport);
 
   const { data, error } = await query;
 

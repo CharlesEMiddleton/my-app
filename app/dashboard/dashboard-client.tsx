@@ -5,6 +5,10 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+import { createClient } from "@/lib/supabase/client";
 
 import {
   Form,
@@ -22,9 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
-// ✅ Zod Schema
 const FilterSchema = z.object({
   name: z.string().optional(),
   sport: z
@@ -41,6 +43,7 @@ export default function DashboardClient({
 }) {
   const [state, formAction] = useActionState(fetchEvents, { events: [] });
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(FilterSchema),
@@ -49,6 +52,17 @@ export default function DashboardClient({
       sport: "all",
     },
   });
+
+  // Trigger initial fetch on mount with default filters
+  useEffect(() => {
+    const formData = new FormData();
+    formData.append("name", "");
+    formData.append("sport", "all");
+    startTransition(() => {
+      formAction(formData);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
@@ -68,13 +82,30 @@ export default function DashboardClient({
     });
   }
 
+  async function handleLogout() {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      toast.error("Logout failed. Try again.");
+    } else {
+      toast.success("Logged out successfully.");
+      router.push("/auth/login");
+    }
+  }
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Link href="/events/create">
-          <Button variant="default">+ Create Event</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/events/create">
+            <Button variant="default">+ Create Event</Button>
+          </Link>
+          <Button variant="outline" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
       </div>
 
       {/* ✅ Filter Form */}
@@ -142,17 +173,10 @@ export default function DashboardClient({
               key={event.id}
               className="border p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
             >
-              <h2 className="text-xl font-semibold">{event.name}</h2>
-              <p className="text-gray-600">{event.sport_type}</p>
-              <p className="text-gray-600">
-                {new Date(event.event_date).toLocaleDateString()}
-              </p>
-              {event.Venues && (
-                <p className="text-sm text-gray-500">
-                  {event.Venues.name} – {event.Venues.city},{" "}
-                  {event.Venues.state}
-                </p>
-              )}
+              <h2 className="text-xl font-semibold mb-1">{event.name}</h2>
+              <p className="text-gray-700"><span className="font-medium">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
+              <p className="text-gray-700"><span className="font-medium">Venue:</span> {event.venues ? `${event.venues.name}${event.venues.city ? ` – ${event.venues.city}` : ""}${event.venues.state ? `, ${event.venues.state}` : ""}` : "N/A"}</p>
+              <p className="text-gray-700"><span className="font-medium">Sport:</span> {event.sport_type ?? "N/A"}</p>
               <Link href={`/events/edit/${event.id}`}>
                 <Button variant="outline" size="sm" className="mt-3">
                   Edit
