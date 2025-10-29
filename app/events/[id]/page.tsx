@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+// Force dynamic rendering - this page uses Supabase
+export const dynamic = 'force-dynamic';
+
 export default async function EventDetailsPage({ 
   params 
 }: { 

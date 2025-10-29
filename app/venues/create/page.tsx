@@ -49,7 +49,8 @@ type Venue = {
 
 export default function CreateVenuePage() {
   const router = useRouter();
-  const supabase = createClient();
+  // Create Supabase client lazily - only when actually needed
+  const getSupabase = () => createClient();
   const [isPending, startTransition] = useTransition();
   const [existingVenues, setExistingVenues] = useState<Venue[]>([]);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export default function CreateVenuePage() {
   useEffect(() => {
     const loadVenues = async () => {
       // Only load template venues (event_id IS NULL)
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("venues")
         .select("id, name, address, city, state, capacity")
@@ -120,6 +122,7 @@ export default function CreateVenuePage() {
   const onSubmit = (values: VenueFormValues) => {
     startTransition(async () => {
       try {
+        const supabase = getSupabase();
         if (editingVenueId) {
           // Update existing venue
           const { error } = await supabase
@@ -187,6 +190,7 @@ export default function CreateVenuePage() {
     }
 
     try {
+      const supabase = getSupabase();
       const { error } = await supabase
         .from("venues")
         .delete()
