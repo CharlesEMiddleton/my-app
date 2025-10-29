@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { EventForm, type EventFormValues } from "@/app/events/form";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { getEventForEdit, updateEventAction, deleteEventAction } from "./actions";
 
 export default function EditEventPage() {
@@ -68,7 +69,13 @@ export default function EditEventPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Edit Event</h1>
+      <div className="flex items-center justify-between mb-4">
+        <Link href={eventId ? `/events/${eventId}` : "/dashboard"}>
+          <Button variant="outline">← Back</Button>
+        </Link>
+        <h1 className="text-2xl font-bold">Edit Event</h1>
+        <div className="w-20"></div> {/* Spacer for alignment */}
+      </div>
       {loading ? (
         <p>Loading...</p>
       ) : (

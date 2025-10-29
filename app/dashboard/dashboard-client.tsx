@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 const FilterSchema = z.object({
   name: z.string().optional(),
@@ -83,14 +84,13 @@ export default function DashboardClient({
   }
 
   async function handleLogout() {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      toast.error("Logout failed. Try again.");
-    } else {
+    try {
+      const { logoutAction } = await import("./actions");
+      await logoutAction();
       toast.success("Logged out successfully.");
       router.push("/auth/login");
+    } catch (error) {
+      toast.error("Logout failed. Try again.");
     }
   }
 
@@ -170,39 +170,56 @@ export default function DashboardClient({
       </Form>
 
       {/* ✅ Events List */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {state?.events?.length > 0 ? (
-          state.events.map((event: any) => (
-            <div
-              key={event.id}
-              className="border p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-            >
-              <h2 className="text-xl font-semibold mb-1">{event.name}</h2>
-              <p className="text-gray-700"><span className="font-medium">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
-              <p className="text-gray-700"><span className="font-medium">Sport:</span> {event.sport_type ?? "N/A"}</p>
-              <p className="text-gray-700"><span className="font-medium">Venues:</span> {
-                event.venues && Array.isArray(event.venues) && event.venues.length > 0
-                  ? event.venues.map((v: any, idx: number) => (
-                      <span key={idx}>
-                        {v.name}{v.city ? ` (${v.city}, ${v.state})` : ""}
-                        {idx < event.venues.length - 1 ? ", " : ""}
-                      </span>
-                    ))
-                  : event.venues && !Array.isArray(event.venues)
-                  ? `${event.venues.name}${event.venues.city ? ` (${event.venues.city}, ${event.venues.state})` : ""}`
-                  : "N/A"
-              }</p>
-              <Link href={`/events/edit/${event.id}`}>
-                <Button variant="outline" size="sm" className="mt-3">
-                  Edit
-                </Button>
+      {isPending && (!state?.events || state.events.length === 0) ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mb-4" />
+          <p className="text-gray-500">Loading events...</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {state?.events?.length > 0 ? (
+            state.events.map((event: any) => (
+              <Link
+                key={event.id}
+                href={`/events/${event.id}`}
+                className="block"
+              >
+                <div className="border p-4 rounded-lg shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer h-full">
+                  <h2 className="text-xl font-semibold mb-1">{event.name}</h2>
+                  <p className="text-gray-700"><span className="font-medium">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
+                  <p className="text-gray-700"><span className="font-medium">Sport:</span> {event.sport_type ?? "N/A"}</p>
+                  <p className="text-gray-700"><span className="font-medium">Venues:</span> {
+                    event.venues && Array.isArray(event.venues) && event.venues.length > 0
+                      ? event.venues.map((v: any, idx: number) => (
+                          <span key={idx}>
+                            {v.name}{v.city ? ` (${v.city}, ${v.state})` : ""}
+                            {idx < event.venues.length - 1 ? ", " : ""}
+                          </span>
+                        ))
+                      : event.venues && !Array.isArray(event.venues)
+                      ? `${event.venues.name}${event.venues.city ? ` (${event.venues.city}, ${event.venues.state})` : ""}`
+                      : "N/A"
+                  }</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = `/events/edit/${event.id}`;
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </div>
               </Link>
-            </div>
-          ))
-        ) : (
-          <p>No events found.</p>
-        )}
-      </div>
+            ))
+          ) : (
+            <p>No events found.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

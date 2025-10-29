@@ -4,6 +4,8 @@
 import { EventForm, type EventFormValues } from "@/app/events/form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { createEventAction } from "./actions";
 
 export default function CreateEventPage() {
@@ -29,7 +31,13 @@ export default function CreateEventPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Create Event</h1>
+      <div className="flex items-center justify-between mb-4">
+        <Link href="/dashboard">
+          <Button variant="outline">← Back</Button>
+        </Link>
+        <h1 className="text-2xl font-bold">Create Event</h1>
+        <div className="w-20"></div> {/* Spacer for alignment */}
+      </div>
       <EventForm onSubmit={handleSubmit} />
     </div>
   );
