@@ -151,8 +151,12 @@ export default function DashboardClient({
                     <SelectItem value="all">All Sports</SelectItem>
                     <SelectItem value="Football">Football</SelectItem>
                     <SelectItem value="Basketball">Basketball</SelectItem>
+                    <SelectItem value="Baseball">Baseball</SelectItem>
                     <SelectItem value="Soccer">Soccer</SelectItem>
                     <SelectItem value="Tennis">Tennis</SelectItem>
+                    <SelectItem value="Hockey">Hockey</SelectItem>
+                    <SelectItem value="Golf">Golf</SelectItem>
+                    <SelectItem value="Volleyball">Volleyball</SelectItem>
                   </SelectContent>
                 </Select>
               </FormItem>
@@ -175,8 +179,19 @@ export default function DashboardClient({
             >
               <h2 className="text-xl font-semibold mb-1">{event.name}</h2>
               <p className="text-gray-700"><span className="font-medium">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
-              <p className="text-gray-700"><span className="font-medium">Venue:</span> {event.venues ? `${event.venues.name}${event.venues.city ? ` – ${event.venues.city}` : ""}${event.venues.state ? `, ${event.venues.state}` : ""}` : "N/A"}</p>
               <p className="text-gray-700"><span className="font-medium">Sport:</span> {event.sport_type ?? "N/A"}</p>
+              <p className="text-gray-700"><span className="font-medium">Venues:</span> {
+                event.venues && Array.isArray(event.venues) && event.venues.length > 0
+                  ? event.venues.map((v: any, idx: number) => (
+                      <span key={idx}>
+                        {v.name}{v.city ? ` (${v.city}, ${v.state})` : ""}
+                        {idx < event.venues.length - 1 ? ", " : ""}
+                      </span>
+                    ))
+                  : event.venues && !Array.isArray(event.venues)
+                  ? `${event.venues.name}${event.venues.city ? ` (${event.venues.city}, ${event.venues.state})` : ""}`
+                  : "N/A"
+              }</p>
               <Link href={`/events/edit/${event.id}`}>
                 <Button variant="outline" size="sm" className="mt-3">
                   Edit

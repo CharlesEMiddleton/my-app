@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
@@ -27,55 +27,33 @@ import {
 // Loosen local typing to avoid generic mismatches from Controller types
 const AnyFormField: any = FormField as any;
 
-const schema = z
-  .object({
-    name: z.string().min(1, "Event name is required"),
-    sport_type: z.enum(["Football", "Basketball", "Soccer", "Tennis"]),
-    description: z.string().optional(),
-    event_date: z.string().min(1, "Event date is required"),
-    venueMode: z.enum(["existing", "new"]).default("new"),
-    existingVenueId: z.string().optional(),
-    venue_name: z.string().optional(),
-    venue_address: z.string().optional(),
-    venue_city: z.string().optional(),
-    venue_state: z.string().optional(),
-    venue_capacity: z.coerce.number().optional(),
-  })
-  .superRefine((val, ctx) => {
-    if (val.venueMode === "existing") {
-      if (!val.existingVenueId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Select an existing venue",
-          path: ["existingVenueId"],
-        });
-      }
-    } else {
-      if (!val.venue_name)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Venue name is required", path: ["venue_name"] });
-      if (!val.venue_address)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Address is required", path: ["venue_address"] });
-      if (!val.venue_city)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "City is required", path: ["venue_city"] });
-      if (!val.venue_state)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "State is required", path: ["venue_state"] });
-      if (!val.venue_capacity || Number(val.venue_capacity) < 1)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Capacity must be at least 1", path: ["venue_capacity"] });
-    }
-  });
+const venueSchema = z.object({
+  name: z.string().min(1, "Venue name is required"),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
+});
+
+const schema = z.object({
+  name: z.string().min(1, "Event name is required"),
+  sport_type: z.enum(["Football", "Basketball", "Baseball", "Soccer", "Tennis", "Hockey", "Golf", "Volleyball"]),
+  description: z.string().optional(),
+  event_date: z.string().min(1, "Event date is required"),
+  venues: z.array(venueSchema).min(1, "At least one venue is required"),
+});
 
 export type EventFormValues = z.infer<typeof schema>;
+export type VenueFormValues = z.infer<typeof venueSchema>;
 
 export function EventForm({
   onSubmit,
   defaultValues,
   rightAction,
-  existingVenues = [],
 }: {
   onSubmit: (values: EventFormValues) => void;
   defaultValues?: Partial<EventFormValues>;
   rightAction?: React.ReactNode;
-  existingVenues?: Array<{ id: string; name: string; address: string; city: string; state: string; capacity: number }>;
 }) {
   const form = useForm<EventFormValues>({
     resolver: zodResolver(schema) as any,
@@ -84,18 +62,25 @@ export function EventForm({
       sport_type: defaultValues?.sport_type ?? "Football",
       description: defaultValues?.description ?? "",
       event_date: defaultValues?.event_date ?? "",
-      venueMode: defaultValues?.venueMode ?? "new",
-      existingVenueId: defaultValues?.existingVenueId ?? undefined,
-      venue_name: defaultValues?.venue_name ?? "",
-      venue_address: defaultValues?.venue_address ?? "",
-      venue_city: defaultValues?.venue_city ?? "",
-      venue_state: defaultValues?.venue_state ?? "",
-      venue_capacity: defaultValues?.venue_capacity ?? 1,
+      venues: defaultValues?.venues && defaultValues.venues.length > 0 
+        ? defaultValues.venues 
+        : [
+            {
+              name: "",
+              address: "",
+              city: "",
+              state: "",
+              capacity: 100,
+            },
+          ],
     },
   });
 
   const [isPending, startTransition] = useTransition();
-  const venueMode = form.watch("venueMode");
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "venues",
+  });
 
   return (
     <Form {...form}>
@@ -138,8 +123,12 @@ export function EventForm({
                     <SelectContent>
                       <SelectItem value="Football">Football</SelectItem>
                       <SelectItem value="Basketball">Basketball</SelectItem>
+                      <SelectItem value="Baseball">Baseball</SelectItem>
                       <SelectItem value="Soccer">Soccer</SelectItem>
                       <SelectItem value="Tennis">Tennis</SelectItem>
+                      <SelectItem value="Hockey">Hockey</SelectItem>
+                      <SelectItem value="Golf">Golf</SelectItem>
+                      <SelectItem value="Volleyball">Volleyball</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -147,56 +136,6 @@ export function EventForm({
               </FormItem>
             )}
           />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <AnyFormField
-            control={form.control}
-            name="venueMode"
-            render={({ field }: any) => (
-              <FormItem>
-                <FormLabel>Venue Mode</FormLabel>
-                <FormControl>
-                  <Select value={String(field.value ?? "")} onValueChange={field.onChange} disabled={isPending}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose venue mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">Add new venue</SelectItem>
-                      <SelectItem value="existing">Use existing venue</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {venueMode === "existing" && (
-            <AnyFormField
-              control={form.control}
-              name="existingVenueId"
-              render={({ field, fieldState }: any) => (
-                <FormItem>
-                  <FormLabel>Select Venue</FormLabel>
-                  <FormControl>
-                    <Select value={String(field.value ?? "")} onValueChange={field.onChange} disabled={isPending}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a venue" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {existingVenues.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.name} — {v.city}, {v.state}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
-                </FormItem>
-              )}
-            />
-          )}
         </div>
 
         <AnyFormField
@@ -227,81 +166,119 @@ export function EventForm({
           )}
         />
 
-        {venueMode === "new" && (
-        <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <AnyFormField
-            control={form.control}
-            name="venue_name"
-            render={({ field, fieldState }: any) => (
-              <FormItem>
-                <FormLabel>Venue Name</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={isPending} />
-                </FormControl>
-                {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
-              </FormItem>
-            )}
-          />
-          <AnyFormField
-            control={form.control}
-            name="venue_address"
-            render={({ field, fieldState }: any) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={isPending} />
-                </FormControl>
-                {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* Venues Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Venues</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                append({
+                  name: "",
+                  address: "",
+                  city: "",
+                  state: "",
+                  capacity: 100,
+                })
+              }
+              disabled={isPending}
+            >
+              + Add Venue
+            </Button>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <AnyFormField
-            control={form.control}
-            name="venue_city"
-            render={({ field, fieldState }: any) => (
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={isPending} />
-                </FormControl>
-                {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
-              </FormItem>
-            )}
-          />
-          <AnyFormField
-            control={form.control}
-            name="venue_state"
-            render={({ field, fieldState }: any) => (
-              <FormItem>
-                <FormLabel>State</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={isPending} />
-                </FormControl>
-                {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
-              </FormItem>
-            )}
-          />
-        </div>
+          {fields.map((field, index) => (
+            <div key={field.id} className="border p-4 rounded-lg space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium">Venue {index + 1}</h4>
+                {fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => remove(index)}
+                    disabled={isPending}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
 
-        <AnyFormField
-          control={form.control}
-          name="venue_capacity"
-          render={({ field, fieldState }: any) => (
-            <FormItem>
-              <FormLabel>Capacity</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} disabled={isPending} />
-              </FormControl>
-              {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
-            </FormItem>
-          )}
-        />
-        </>
-        )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <AnyFormField
+                  control={form.control}
+                  name={`venues.${index}.name`}
+                  render={({ field, fieldState }: any) => (
+                    <FormItem>
+                      <FormLabel>Venue Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={isPending} />
+                      </FormControl>
+                      {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
+                    </FormItem>
+                  )}
+                />
+                <AnyFormField
+                  control={form.control}
+                  name={`venues.${index}.address`}
+                  render={({ field, fieldState }: any) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={isPending} />
+                      </FormControl>
+                      {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <AnyFormField
+                  control={form.control}
+                  name={`venues.${index}.city`}
+                  render={({ field, fieldState }: any) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={isPending} />
+                      </FormControl>
+                      {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
+                    </FormItem>
+                  )}
+                />
+                <AnyFormField
+                  control={form.control}
+                  name={`venues.${index}.state`}
+                  render={({ field, fieldState }: any) => (
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={isPending} />
+                      </FormControl>
+                      {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
+                    </FormItem>
+                  )}
+                />
+                <AnyFormField
+                  control={form.control}
+                  name={`venues.${index}.capacity`}
+                  render={({ field, fieldState }: any) => (
+                    <FormItem>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} disabled={isPending} />
+                      </FormControl>
+                      {fieldState.error && <FormMessage>{fieldState.error.message}</FormMessage>}
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div className="flex items-center gap-2">
           <Button type="submit" disabled={isPending}>
