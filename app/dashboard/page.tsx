@@ -1,20 +1,7 @@
 // app/dashboard/page.tsx
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { fetchEventsServerAction } from "./actions";
+import DashboardClient from "./dashboard-client";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims) {
-    redirect("/auth/login");
-  }
-
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold">Welcome to your Dashboard</h1>
-      <p className="mt-4">Only authenticated users can see this.</p>
-    </div>
-  );
+export default function DashboardPage() {
+  return <DashboardClient fetchEvents={fetchEventsServerAction} />;
 }
