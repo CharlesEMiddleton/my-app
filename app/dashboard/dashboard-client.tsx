@@ -184,7 +184,22 @@ export default function DashboardClient({
                 href={`/events/${event.id}`}
                 className="block group"
               >
-                <div className="border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full bg-white hover:bg-gray-50">
+                <div
+                  className="border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full bg-white hover:bg-gray-50"
+                  role="link"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    // ensure navigation even if Link is interfered with by other elements in prod
+                    e.preventDefault();
+                    router.push(`/events/${event.id}`);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/events/${event.id}`);
+                    }
+                  }}
+                >
                   <h2 className="text-xl font-semibold mb-2 text-gray-900 group-hover:text-primary transition-colors">{event.name}</h2>
                   <div className="space-y-1 text-sm text-gray-600">
                     <p><span className="font-medium text-gray-700">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
