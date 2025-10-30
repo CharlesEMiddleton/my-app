@@ -13,7 +13,8 @@ export async function createClient() {
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      'Missing Supabase environment variables. Please check your .env.local file or Vercel environment variables. ' +
+      'Missing Supabase environment variables. ' +
+      'Please check your .env.local file or Vercel environment variables. ' +
       'Required: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'
     );
   }
