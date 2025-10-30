@@ -30,15 +30,20 @@ export default function CreateEventPage() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <Link href="/dashboard">
-          <Button variant="outline">← Back</Button>
-        </Link>
-        <h1 className="text-2xl font-bold">Create Event</h1>
-        <div className="w-20"></div> {/* Spacer for alignment */}
+    <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-cyan-950">
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/dashboard">
+            <Button variant="outline" className="border-cyan-700 text-cyan-300 hover:bg-cyan-900/30">← Back</Button>
+          </Link>
+          <h1 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-cyan-400">Create Event</h1>
+          <div className="w-24" />
+        </div>
+
+        <div className="rounded-xl border border-cyan-800/40 bg-black/30 backdrop-blur-sm p-5">
+          <EventForm onSubmit={handleSubmit} />
+        </div>
       </div>
-      <EventForm onSubmit={handleSubmit} />
     </div>
   );
 }

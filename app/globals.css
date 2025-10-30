@@ -32,6 +32,10 @@
 
     /* Optional: define this if you were trying to use it elsewhere */
     --cell-size: 2rem; /* ~= Tailwind spacing.8 */
+
+    /* Custom brand colors for gradients */
+    --bright-aqua: #22d3ee; /* cyan-400 */
+    --electric-sky: #06b6d4; /* cyan-500 */
   }
 
   .dark {
