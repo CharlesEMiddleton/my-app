@@ -7,7 +7,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/supabase/client";
+import {
+  getTemplateVenues,
+  createVenueAction,
+  updateVenueAction,
+  deleteVenueAction,
+} from "../actions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,8 +54,6 @@ type Venue = {
 
 export default function CreateVenuePage() {
   const router = useRouter();
-  // Create Supabase client lazily - only when actually needed
-  const getSupabase = () => createClient();
   const [isPending, startTransition] = useTransition();
   const [existingVenues, setExistingVenues] = useState<Venue[]>([]);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -70,19 +73,11 @@ export default function CreateVenuePage() {
 
   useEffect(() => {
     const loadVenues = async () => {
-      // Only load template venues (event_id IS NULL)
-      const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from("venues")
-        .select("id, name, address, city, state, capacity")
-        .is("event_id", null)
-        .order("name", { ascending: true });
-
-      if (error) {
-        // eslint-disable-next-line no-console
-        console.warn("Failed to load venues:", error);
-      } else if (data) {
-        setExistingVenues(data as Venue[]);
+      const result = await getTemplateVenues();
+      if (result.success) {
+        setExistingVenues(result.data);
+      } else {
+        toast.error(`Failed to load venues: ${result.error}`);
       }
     };
     loadVenues();
@@ -122,47 +117,44 @@ export default function CreateVenuePage() {
   const onSubmit = (values: VenueFormValues) => {
     startTransition(async () => {
       try {
-        const supabase = getSupabase();
+        let result;
         if (editingVenueId) {
           // Update existing venue
-          const { error } = await supabase
-            .from("venues")
-            .update({
-              name: values.name,
-              address: values.address,
-              city: values.city,
-              state: values.state,
-              capacity: Number(values.capacity),
-            })
-            .eq("id", editingVenueId)
-            .is("event_id", null); // Only update template venues
-
-          if (error) throw error;
-          toast.success("Venue updated!");
+          result = await updateVenueAction(editingVenueId, {
+            name: values.name,
+            address: values.address,
+            city: values.city,
+            state: values.state,
+            capacity: values.capacity,
+          });
+          if (result.success) {
+            toast.success("Venue updated!");
+          } else {
+            toast.error(result.error);
+            return;
+          }
         } else {
           // Create new venue
-          const { error } = await supabase.from("venues").insert([
-            {
-              // event_id intentionally omitted to act as a reusable template
-              name: values.name,
-              address: values.address,
-              city: values.city,
-              state: values.state,
-              capacity: Number(values.capacity),
-            },
-          ]);
-
-          if (error) throw error;
-          toast.success("Venue created!");
+          result = await createVenueAction({
+            name: values.name,
+            address: values.address,
+            city: values.city,
+            state: values.state,
+            capacity: values.capacity,
+          });
+          if (result.success) {
+            toast.success("Venue created!");
+          } else {
+            toast.error(result.error);
+            return;
+          }
         }
 
         // Reload venues and reset form
-        const { data } = await supabase
-          .from("venues")
-          .select("id, name, address, city, state, capacity")
-          .is("event_id", null)
-          .order("name", { ascending: true });
-        if (data) setExistingVenues(data as Venue[]);
+        const reloadResult = await getTemplateVenues();
+        if (reloadResult.success) {
+          setExistingVenues(reloadResult.data);
+        }
 
         setSelectedVenueId(null);
         setEditingVenueId(null);
@@ -189,25 +181,15 @@ export default function CreateVenuePage() {
       return;
     }
 
-    try {
-      const supabase = getSupabase();
-      const { error } = await supabase
-        .from("venues")
-        .delete()
-        .eq("id", venueId)
-        .is("event_id", null); // Only delete template venues
-
-      if (error) throw error;
-
+    const result = await deleteVenueAction(venueId);
+    if (result.success) {
       toast.success("Venue deleted!");
       
       // Reload venues
-      const { data } = await supabase
-        .from("venues")
-        .select("id, name, address, city, state, capacity")
-        .is("event_id", null)
-        .order("name", { ascending: true });
-      if (data) setExistingVenues(data as Venue[]);
+      const reloadResult = await getTemplateVenues();
+      if (reloadResult.success) {
+        setExistingVenues(reloadResult.data);
+      }
 
       // If we deleted the venue we were editing, reset the form
       if (editingVenueId === venueId) {
@@ -222,12 +204,8 @@ export default function CreateVenuePage() {
           capacity: 100,
         });
       }
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error("Delete venue error:", e);
-      toast.error(
-        e instanceof Error ? e.message : "Failed to delete venue."
-      );
+    } else {
+      toast.error(result.error);
     }
   };
 

@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/client";
+// Removed direct Supabase client import - using server actions instead
 
 import {
   Form,
