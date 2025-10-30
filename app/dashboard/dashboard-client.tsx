@@ -182,33 +182,36 @@ export default function DashboardClient({
               <Link
                 key={event.id}
                 href={`/events/${event.id}`}
-                className="block"
+                className="block group"
               >
-                <div className="border p-4 rounded-lg shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer h-full">
-                  <h2 className="text-xl font-semibold mb-1">{event.name}</h2>
-                  <p className="text-gray-700"><span className="font-medium">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
-                  <p className="text-gray-700"><span className="font-medium">Sport:</span> {event.sport_type ?? "N/A"}</p>
-                  <p className="text-gray-700"><span className="font-medium">Venues:</span> {
-                    event.venues && Array.isArray(event.venues) && event.venues.length > 0
-                      ? event.venues.map((v: any, idx: number) => (
-                          <span key={idx}>
-                            {v.name}{v.city ? ` (${v.city}, ${v.state})` : ""}
-                            {idx < event.venues.length - 1 ? ", " : ""}
-                          </span>
-                        ))
-                      : event.venues && !Array.isArray(event.venues)
-                      ? `${event.venues.name}${event.venues.city ? ` (${event.venues.city}, ${event.venues.state})` : ""}`
-                      : "N/A"
-                  }</p>
+                <div className="border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full bg-white hover:bg-gray-50">
+                  <h2 className="text-xl font-semibold mb-2 text-gray-900 group-hover:text-primary transition-colors">{event.name}</h2>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p><span className="font-medium text-gray-700">Date:</span> {event.event_date ? new Date(event.event_date).toLocaleDateString() : "N/A"}</p>
+                    <p><span className="font-medium text-gray-700">Sport:</span> {event.sport_type ?? "N/A"}</p>
+                    <p><span className="font-medium text-gray-700">Venues:</span> {
+                      event.venues && Array.isArray(event.venues) && event.venues.length > 0
+                        ? event.venues.map((v: any, idx: number) => (
+                            <span key={idx}>
+                              {v.name}{v.city ? ` (${v.city}, ${v.state})` : ""}
+                              {idx < event.venues.length - 1 ? ", " : ""}
+                            </span>
+                          ))
+                        : event.venues && !Array.isArray(event.venues)
+                        ? `${event.venues.name}${event.venues.city ? ` (${event.venues.city}, ${event.venues.state})` : ""}`
+                        : "N/A"
+                    }</p>
+                  </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="mt-3"
+                    className="mt-3 w-full"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      window.location.href = `/events/edit/${event.id}`;
+                      router.push(`/events/edit/${event.id}`);
                     }}
+                    type="button"
                   >
                     Edit
                   </Button>
@@ -216,7 +219,7 @@ export default function DashboardClient({
               </Link>
             ))
           ) : (
-            <p>No events found.</p>
+            <p className="text-gray-500 col-span-full text-center py-8">No events found.</p>
           )}
         </div>
       )}
