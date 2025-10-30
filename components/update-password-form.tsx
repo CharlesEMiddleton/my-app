@@ -23,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { updatePasswordAction } from "@/app/auth/actions";
 
 const updatePasswordSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -47,13 +47,14 @@ export function UpdatePasswordForm({
   });
 
   const handleUpdatePassword = async (values: UpdatePasswordFormValues) => {
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: values.password });
-      if (error) throw error;
+      const res = await updatePasswordAction(values.password);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       router.push("/protected");
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred";

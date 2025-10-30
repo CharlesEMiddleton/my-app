@@ -23,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { resetPasswordAction } from "@/app/auth/actions";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -47,15 +47,14 @@ export function ForgotPasswordForm({
   });
 
   const handleForgotPassword = async (values: ForgotPasswordFormValues) => {
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
-      if (error) throw error;
+      const res = await resetPasswordAction(values.email, `${window.location.origin}/auth/update-password`);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setSuccess(true);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred";

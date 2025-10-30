@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { signInAction } from "@/app/auth/actions";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -50,16 +50,14 @@ export function LoginForm({
   });
 
   const handleLogin = async (values: LoginFormValues) => {
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-      if (error) throw error;
+      const res = await signInAction(values.email, values.password);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       router.push("/dashboard");
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred";
